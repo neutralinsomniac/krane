@@ -1,0 +1,28 @@
+---
+volumes:
+  krane:
+    schema: gpt
+    bootloader: grub
+    structure:
+      - name: depthcharge
+        type: FE3A2A5D-4F32-41A7-B725-ACCC3285A309
+        size: 16M
+      - name: EFI System
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        filesystem-label: esp
+        size: 100M
+        role: system-boot
+        content:
+          - source: grub/grubaa64.efi
+            target: EFI/boot/bootaa64.efi
+          - source: grub/grubaa64.efi
+            target: EFI/ubuntu/grubaa64.efi
+          - source: grub/grub.cfg
+            target: EFI/ubuntu/grub.cfg
+      - name: Root Partition
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        size: 4096M
+        role: system-data

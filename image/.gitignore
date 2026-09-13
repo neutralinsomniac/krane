@@ -1,0 +1,13 @@
+# build outputs
+/build/
+/workdir/
+/out/
+/*.log
+
+# generated blobs (make payload / make grub)
+payload/build/
+payload/*.bin
+payload/*.o
+gadget/grub/grubaa64.efi
+gadget/u-boot/krane-uboot-payload.bin
+

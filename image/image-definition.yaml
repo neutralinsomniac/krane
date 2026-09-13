@@ -1,0 +1,74 @@
+---
+name: ubuntu-desktop-krane-arm64
+display-name: Ubuntu Preinstalled Desktop for kukui-krane (arm64)
+revision: 1
+architecture: arm64
+series: stonking
+class: preinstalled
+kernel: linux-image-generic
+gadget:
+  url: file://gadget
+  type: directory
+rootfs:
+  archive: ubuntu
+  sources-list-deb822: true
+  components:
+    - main
+    - restricted
+    - universe
+    - multiverse
+  mirror: "http://ports.ubuntu.com/ubuntu-ports/"
+  pocket: updates
+  seed:
+    urls:
+      - "https://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
+    branch: stonking
+    names:
+      - minimal
+      - standard
+      - desktop-minimal
+customization:
+  cloud-init:
+    meta-data: |
+      dsmode: local
+      instance_id: krane-ubuntu-image
+    user-data: |
+      #cloud-config
+      chpasswd:
+        expire: True
+        users:
+          - name: ubuntu
+            password: ubuntu
+            type: text
+      runcmd:
+        # flash-kernel drops an extlinux config that could shadow the
+        # GRUB boot path; the GRUB setup itself is already baked into
+        # the image by ubuntu-image (grub-install + update-grub ran at
+        # build time against the assembled disk)
+        - rm -rf /boot/extlinux/
+  extra-packages:
+    - name: cloud-init
+    - name: flash-kernel
+    - name: grub-efi-arm64
+    - name: grub-efi-arm64-signed
+    - name: shim-signed
+    - name: linux-firmware
+  extra-snaps:
+    - name: snapd
+  fstab:
+    - label: "writable"
+      mountpoint: "/"
+      filesystem-type: "ext4"
+      dump: false
+      fsck-order: 1
+    - label: "esp"
+      mountpoint: "/boot/efi"
+      filesystem-type: "vfat"
+      mount-options: "defaults"
+      dump: false
+      fsck-order: 2
+artifacts:
+  img:
+    - name: ubuntu-26.10-preinstalled-desktop-krane-arm64.img
+  manifest:
+    name: ubuntu-26.10-preinstalled-desktop-krane-arm64.manifest
