@@ -38,12 +38,21 @@ if [ -z "$IMG" ] || [ ! -f "$IMG" ]; then
 fi
 
 # modules wanted in the initrd, in load order (initramfs-tools path
-# loads them in this order; modprobe normalizes -/_)
+# loads them in this order; modprobe normalizes -/_).  USB host chain:
+# ORDER IS LOAD-BEARING.  The mtu3 node is "simple-mfd", so its child
+# xHCI device exists from early boot; mtu3 must probe BEFORE
+# xhci-mtk-hcd binds the child, because only the parent powers the
+# host IP through the shared IPPC block — a child bound first probes
+# with has_ippc=false, finds a dead IP, and fails hard (no retry),
+# killing all USB for the boot.
 WANTED="
 mtk-pmic-wrap
 mt6397
 mt6358-regulator
 phy-mtk-tphy
+mtu3
+xhci-plat-hcd
+xhci-mtk-hcd
 usb-storage
 uas
 mtk-mmsys
@@ -128,13 +137,22 @@ elif [ -x "$MNT/usr/sbin/update-initramfs" ]; then
 	echo "==> configuring initramfs-tools"
 	MODULES_FILE="$MNT/etc/initramfs-tools/modules"
 	touch "$MODULES_FILE"
+	# strip any previously appended krane entries: the load ORDER is
+	# load-bearing and has changed between script versions
+	grep_args=""
+	for m in $MODS; do
+		grep_args="$grep_args -e $m"
+	done
+	grep -vxF $grep_args -e "MT8183 krane boot chain" "$MODULES_FILE" \
+		> "$MODULES_FILE.new" || true
 	{
 		echo ""
 		echo "# MT8183 krane boot chain — see postprocess/initramfs-mtk.sh"
 		for m in $MODS; do
-			grep -q "^$m\$" "$MODULES_FILE" || echo "$m"
+			echo "$m"
 		done
-	} >> "$MODULES_FILE"
+	} >> "$MODULES_FILE.new"
+	mv "$MODULES_FILE.new" "$MODULES_FILE"
 
 	REGENT="update-initramfs -u -k $KVER"
 else
